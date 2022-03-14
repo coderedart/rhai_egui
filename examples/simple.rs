@@ -36,7 +36,9 @@ fn main() {
     let scope = Scope::new();
     let rhai_code = r#"CTX.window("my window", |ui| {
         label(ui, "hello");
-        button(ui, "random button");
+        if button(ui, "random button").clicked() {
+            print("clicked me");
+        };
         check_box(ui, true, "always checked");
         }
         );"#.to_string();
