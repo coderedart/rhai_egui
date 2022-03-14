@@ -10,8 +10,10 @@ pub struct App {
 
 impl eframe::epi::App for App {
     fn update(&mut self, ctx: &eframe::egui::Context, _frame: &eframe::epi::Frame) {
-        Window::new("rhai editor").show(ctx, |ui| {
-            ui.code_editor(&mut self.rhai_code);
+        Window::new("rhai editor")
+        .scroll2([true, true])
+        .show(ctx, |ui| {
+            ui.add(egui::widgets::TextEdit::multiline(&mut self.rhai_code).code_editor().desired_width(500.0));
             if ui.button("compile").clicked() {
                 match self.engine.compile_with_scope(&self.scope, &self.rhai_code) {
                     Ok(ast) => self.ast = ast,
@@ -35,21 +37,38 @@ fn main() {
     engine.register_global_module(rhai_egui::EguiPackage::new().as_shared_module());
     let scope = Scope::new();
     let rhai_code = r#"CTX.window("my window", |ui| {
-        label(ui, "hello");
-        if button(ui, "random button").clicked() {
+
+        ui.label("hello");
+
+        if ui.button("random button").clicked() {
             print("clicked me");
         };
-        check_box(ui, true, "always checked");
-        }
-        );"#.to_string();
+
+        ui.checkbox(true, "always checked");
+
+        ui.hyperlink("https://egui.rs").context_menu( |ui| {
+
+            if ui.button("menu button").clicked() {
+                print("clicking menu");          
+            }
+
+        });
+        });"#
+    .to_string();
+
     let ast = engine
         .compile_with_scope(&scope, &rhai_code)
         .expect("failed to compile");
+
     let app = App {
         engine,
         ast,
         scope,
         rhai_code,
     };
-    eframe::run_native(Box::new(app), eframe::NativeOptions::default())
+
+    eframe::run_native(Box::new(app), eframe::NativeOptions {
+        initial_window_size: Some(vec2(800.0, 600.0)),
+        ..Default::default()
+    })
 }

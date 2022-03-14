@@ -1,13 +1,15 @@
 
+use std::ops::{DerefMut, Deref};
+
 use egui::*;
 use rhai::*;
 use rhai::plugin::*;
-pub fn cast_i64_to_ref(ui: i64) -> &'static mut Ui {
-    let ui = ui as usize as *mut Ui;
+pub fn cast_usize_to_ref(ui: usize) -> &'static mut Ui {
+    let ui = ui as *mut Ui;
      unsafe { ui.as_mut().expect("failed to cast back to ptr") }
 }
-pub fn cast_ref_to_i64(ui: &mut Ui) -> i64 {
-    ui as *mut Ui as i64
+pub fn cast_ref_to_usize(ui: &mut Ui) -> usize {
+    ui as *mut Ui as usize
 }
 
 def_package! {
@@ -16,7 +18,7 @@ def_package! {
         combine_with_exported_module!(lib, "context_api", egui_context_api);
 
         combine_with_exported_module!(lib, "ui_api", egui_ui_api);
-        
+
         combine_with_exported_module!(lib, "response:api", egui_response_api);
     }
 }
@@ -25,32 +27,236 @@ mod egui_context_api {
     pub fn request_repaint(ctx: &mut Context) {
         ctx.request_repaint();
     }
-    pub fn style_ui(ctx: &mut Context, ui: i64) {
-        ctx.style_ui(cast_i64_to_ref(ui));
-    }
+    
 
     pub fn window(rtx: NativeCallContext, ctx: &mut Context, title: &str, cb: FnPtr) {
         let window = {
             Window::new(title)
         };
         window.show(ctx, |ui| {
-            let _: Result<(), _> = cb.call_within_context(&rtx, (cast_ref_to_i64(ui),));
+            let my_ui: MyUi = ui.into();
+            let _: Result<(), _> = cb.call_within_context(&rtx, (my_ui,));
         });
     }
 }
 
+#[derive(Debug, Clone, Copy)]
+pub struct MyUi(usize);
+impl From<&mut Ui> for MyUi {
+    fn from(ui: &mut Ui) -> Self {
+        MyUi(cast_ref_to_usize(ui))
+    }
+}
+impl Deref for MyUi {
+    type Target = Ui;
+
+    fn deref(&self) -> &Self::Target {
+        cast_usize_to_ref(self.0)
+    }
+}
+impl DerefMut for MyUi {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        cast_usize_to_ref(self.0)
+    }
+}
 #[export_module]
 mod egui_ui_api {
-    pub fn button(ui: i64, text: &str) -> Response {
-        cast_i64_to_ref(ui).button(text)
+    pub fn button(ui: &mut MyUi, text: &str) -> Response {
+        ui.button(text)
     }
-    pub fn check_box(ui: i64, checked: bool, text: &str) -> Response {
+    pub fn checkbox(ui: &mut MyUi, checked: bool, text: &str) -> Response {
         let mut checked = checked;
-        cast_i64_to_ref(ui).checkbox(&mut checked, text)
+        ui.checkbox(&mut checked, text)
     }
-    pub fn label(ui: i64, text: &str) -> Response {
-        cast_i64_to_ref(ui).label(text)
+    pub fn label(ui: &mut MyUi, text: &str) -> Response {
+        ui.label(text)
     }
+ 
+    /// Reset to the default style set in [`Context`].
+    pub fn reset_style(ui: &mut MyUi) {
+        ui.reset_style();
+    }
+
+
+
+
+    /// If `false`, the `Ui` does not allow any interaction and
+    /// the widgets in it will draw with a gray look.
+    pub fn is_enabled(ui: &mut MyUi) -> bool {
+        ui.is_enabled()
+    }
+
+    /// Calling `set_enabled(false)` will cause the `Ui` to deny all future interaction
+    /// and all the widgets will draw with a gray look.
+    ///
+    /// Usually it is more convenient to use [`Self::add_enabled_ui`] or [`Self::add_enabled`].
+    ///
+    /// Calling `set_enabled(true)` has no effect - it will NOT re-enable the `Ui` once disabled.
+    ///
+    /// ### Example
+    /// ```
+    /// # egui::__run_test_ui(|ui| {
+    /// # let mut enabled = true;
+    /// ui.group(|ui| {
+    ///     ui.checkbox(&mut enabled, "Enable subsection");
+    ///     ui.set_enabled(enabled);
+    ///     if ui.button("Button that is not always clickable").clicked() {
+    ///         /* … */
+    ///     }
+    /// });
+    /// # });
+    /// ```
+    pub fn set_enabled(ui:&mut MyUi, enabled: bool) {
+        ui.set_enabled(enabled)
+    }
+
+    /// If `false`, any widgets added to the `Ui` will be invisible and non-interactive.
+    pub fn is_visible(ui: &mut MyUi) -> bool {
+        ui.is_visible()
+    }
+
+
+
+    /// Calling `set_visible(false)` will cause all further widgets to be invisible,
+    /// yet still allocate space.
+    ///
+    /// The widgets will not be interactive (`set_visible(false)` implies `set_enabled(false)`).
+    ///
+    /// Calling `set_visible(true)` has no effect.
+    ///
+    /// ### Example
+    /// ```
+    /// # egui::__run_test_ui(|ui| {
+    /// # let mut visible = true;
+    /// ui.group(|ui| {
+    ///     ui.checkbox(&mut visible, "Show subsection");
+    ///     ui.set_visible(visible);
+    ///     if ui.button("Button that is not always shown").clicked() {
+    ///         /* … */
+    ///     }
+    /// });
+    /// # });
+    /// ```
+    pub fn set_visible(ui: &mut MyUi, visible: bool) {
+        ui.set_visible(visible);
+    }
+
+
+    /// Should text wrap in this `Ui`?
+    ///
+    /// This is determined first by [`Style::wrap`], and then by the layout of this `Ui`.
+    pub fn wrap_text(ui: &mut MyUi) -> bool {
+        ui.wrap_text()
+    }
+
+    /// Is the pointer (mouse/touch) above this `Ui`?
+    /// Equivalent to `ui.rect_contains_pointer(ui.min_rect())`
+    pub fn ui_contains_pointer(ui: &mut MyUi) -> bool {
+        ui.ui_contains_pointer()
+    }
+
+    /// Add extra space before the next widget.
+    ///
+    /// The direction is dependent on the layout.
+    /// This will be in addition to the [`crate::style::Spacing::item_spacing`].
+    ///
+    /// [`Self::min_rect`] will expand to contain the space.
+    pub fn add_space(ui: &mut MyUi, amount: f32) {
+        ui.add_space(amount)
+    }
+
+    /// Show large text.
+    ///
+    /// Shortcut for `ui.label(RichText::new(text).heading())`
+    pub fn heading(ui: &mut MyUi, text: &str) -> Response {
+        ui.heading(text)
+    }
+
+    /// Show monospace (fixed width) text.
+    ///
+    /// Shortcut for `ui.label(RichText::new(text).monospace())`
+    pub fn monospace(ui: &mut MyUi, text: &str) -> Response {
+        ui.monospace(text)
+    }
+
+    /// Show text as monospace with a gray background.
+    ///
+    /// Shortcut for `ui.label(RichText::new(text).code())`
+    pub fn code(ui: &mut MyUi, text: &str) -> Response {
+        ui.code(text)
+    }
+
+    /// Show small text.
+    ///
+    /// Shortcut for `ui.label(RichText::new(text).small())`
+    pub fn small(ui: &mut MyUi, text: &str) -> Response {
+        ui.small(text)
+    }
+
+    /// Show text that stand out a bit (e.g. slightly brighter).
+    ///
+    /// Shortcut for `ui.label(RichText::new(text).strong())`
+    pub fn strong(ui: &mut MyUi, text: &str) -> Response {
+        ui.strong(text)
+    }
+
+    /// Show text that is waker (fainter color).
+    ///
+    /// Shortcut for `ui.label(RichText::new(text).weak())`
+    pub fn weak(ui: &mut MyUi, text: &str) -> Response {
+        ui.weak(text)
+    }
+
+    /// Shortcut for `add(Hyperlink::new(url))`
+    ///
+    /// See also [`Hyperlink`].
+    pub fn hyperlink(ui: &mut MyUi, url: &str) -> Response {
+        ui.hyperlink(url)
+    }
+
+    /// Shortcut for `add(Hyperlink::new(url).text(label))`
+    ///
+    /// ```
+    /// # egui::__run_test_ui(|ui| {
+    /// ui.hyperlink_to("egui on GitHub", "https://www.github.com/emilk/egui/");
+    /// # });
+    /// ```
+    ///
+    /// See also [`Hyperlink`].
+    pub fn hyperlink_to(ui: &mut MyUi, label: &str, url: &str) -> Response {
+        ui.hyperlink_to(label, url)
+    }
+
+
+    /// A button as small as normal body text.
+    ///
+    /// Usage: `if ui.small_button("Click me").clicked() { … }`
+    ///
+    /// Shortcut for `add(Button::new(text).small())`
+    pub fn small_button(ui: &mut MyUi, text: &str) -> Response {
+        ui.small_button(text)
+    }
+
+
+    /// Show a [`RadioButton`].
+    /// Often you want to use [`Self::radio_value`] instead.
+
+    pub fn radio(ui: &mut MyUi, selected: bool, text: &str) -> Response {
+        ui.radio(selected, text)
+    }
+
+    /// Show a label which can be selected or not.
+    ///
+    /// See also [`SelectableLabel`].
+    pub fn selectable_label(ui: &mut MyUi, checked: bool, text: &str) -> Response {
+        ui.selectable_label(checked, text)
+    }
+
+    /// Shortcut for `add(Separator::default())` (see [`Separator`]).
+    pub fn separator(ui: &mut MyUi) -> Response {
+        ui.separator()
+    }
+
 }
 
 #[export_module]
@@ -362,22 +568,24 @@ mod egui_response_api {
     //     }
     // }
 
-    // /// Response to secondary clicks (right-clicks) by showing the given menu.
-    // ///
-    // /// ```
-    // /// # egui::__run_test_ui(|ui| {
-    // /// let response = ui.label("Right-click me!");
-    // /// response.context_menu(|ui| {
-    // ///     if ui.button("Close the menu").clicked() {
-    // ///         ui.close_menu();
-    // ///     }
-    // /// });
-    // /// # });
-    // /// ```
-    // ///
-    // /// See also: [`Ui::menu_button`] and [`Ui::close_menu`].
-    // pub fn context_menu(resp: &mut Response, add_contents: impl FnOnce(&mut Ui)) -> Response {
-    //     menu::context_menu(resp: &mut Response, add_contents);
-    //    resp
-    // }
+    /// Response to secondary clicks (right-clicks) by showing the given menu.
+    ///
+    /// ```
+    /// # egui::__run_test_ui(|ui| {
+    /// let response = ui.label("Right-click me!");
+    /// response.context_menu(|ui| {
+    ///     if ui.button("Close the menu").clicked() {
+    ///         ui.close_menu();
+    ///     }
+    /// });
+    /// # });
+    /// ```
+    ///
+    /// See also: [`Ui::menu_button`] and [`Ui::close_menu`].
+    pub fn context_menu(rtx: NativeCallContext, resp: &mut Response, cb: FnPtr) -> Response {
+        resp.clone().context_menu(|ui| {
+            
+            let _: () = cb.call_within_context(&rtx, (MyUi::from(ui),)).expect("failed to execute callback code on ui");
+        })
+    }
 }
