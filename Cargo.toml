@@ -6,8 +6,19 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-egui = "0.17.0"
-rhai = "1"
+egui = "0.18.1"
+eframe = "0.18.0"
+tracing-wasm = "*"
+tracing = "*"
+tracing-subscriber = "*"
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+rhai = { version = "1.8.0", default-features = false }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+rhai = { version = "1.8.0", features = [
+    "wasm-bindgen",
+], default-features = false }
 
 [dev-dependencies]
-eframe = "0.17.0"
+eframe = "0.18.0"

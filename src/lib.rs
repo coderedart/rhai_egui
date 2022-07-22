@@ -1,12 +1,11 @@
-
-use std::ops::{DerefMut, Deref};
+use std::ops::{Deref, DerefMut};
 
 use egui::*;
-use rhai::*;
 use rhai::plugin::*;
+use rhai::*;
 pub fn cast_usize_to_ref(ui: usize) -> &'static mut Ui {
     let ui = ui as *mut Ui;
-     unsafe { ui.as_mut().expect("failed to cast back to ptr") }
+    unsafe { ui.as_mut().expect("failed to cast back to ptr") }
 }
 pub fn cast_ref_to_usize(ui: &mut Ui) -> usize {
     ui as *mut Ui as usize
@@ -27,12 +26,9 @@ mod egui_context_api {
     pub fn request_repaint(ctx: &mut Context) {
         ctx.request_repaint();
     }
-    
 
     pub fn window(rtx: NativeCallContext, ctx: &mut Context, title: &str, cb: FnPtr) {
-        let window = {
-            Window::new(title)
-        };
+        let window = { Window::new(title) };
         window.show(ctx, |ui| {
             let my_ui: MyUi = ui.into();
             let _: Result<(), _> = cb.call_within_context(&rtx, (my_ui,));
@@ -71,14 +67,11 @@ mod egui_ui_api {
     pub fn label(ui: &mut MyUi, text: &str) -> Response {
         ui.label(text)
     }
- 
+
     /// Reset to the default style set in [`Context`].
     pub fn reset_style(ui: &mut MyUi) {
         ui.reset_style();
     }
-
-
-
 
     /// If `false`, the `Ui` does not allow any interaction and
     /// the widgets in it will draw with a gray look.
@@ -106,7 +99,7 @@ mod egui_ui_api {
     /// });
     /// # });
     /// ```
-    pub fn set_enabled(ui:&mut MyUi, enabled: bool) {
+    pub fn set_enabled(ui: &mut MyUi, enabled: bool) {
         ui.set_enabled(enabled)
     }
 
@@ -114,8 +107,6 @@ mod egui_ui_api {
     pub fn is_visible(ui: &mut MyUi) -> bool {
         ui.is_visible()
     }
-
-
 
     /// Calling `set_visible(false)` will cause all further widgets to be invisible,
     /// yet still allocate space.
@@ -140,7 +131,6 @@ mod egui_ui_api {
     pub fn set_visible(ui: &mut MyUi, visible: bool) {
         ui.set_visible(visible);
     }
-
 
     /// Should text wrap in this `Ui`?
     ///
@@ -227,7 +217,6 @@ mod egui_ui_api {
         ui.hyperlink_to(label, url)
     }
 
-
     /// A button as small as normal body text.
     ///
     /// Usage: `if ui.small_button("Click me").clicked() { … }`
@@ -236,7 +225,6 @@ mod egui_ui_api {
     pub fn small_button(ui: &mut MyUi, text: &str) -> Response {
         ui.small_button(text)
     }
-
 
     /// Show a [`RadioButton`].
     /// Often you want to use [`Self::radio_value`] instead.
@@ -256,39 +244,38 @@ mod egui_ui_api {
     pub fn separator(ui: &mut MyUi) -> Response {
         ui.separator()
     }
-
 }
 
 #[export_module]
 mod egui_response_api {
     #[inline(always)]
     pub fn clicked(resp: &mut Response) -> bool {
-       resp.clicked()
+        resp.clicked()
     }
 
     /// Returns true if this widget was clicked this frame by the given button.
     pub fn clicked_by(resp: &mut Response, button: PointerButton) -> bool {
-       resp.clicked_by(button)
+        resp.clicked_by(button)
     }
 
     /// Returns true if this widget was clicked this frame by the secondary mouse button (e.g. the right mouse button).
     pub fn secondary_clicked(resp: &mut Response) -> bool {
-       resp.secondary_clicked()
+        resp.secondary_clicked()
     }
 
     /// Returns true if this widget was clicked this frame by the middle mouse button.
     pub fn middle_clicked(resp: &mut Response) -> bool {
-       resp.middle_clicked()
+        resp.middle_clicked()
     }
 
     /// Returns true if this widget was double-clicked this frame by the primary button.
     pub fn double_clicked(resp: &mut Response) -> bool {
-       resp.double_clicked()
+        resp.double_clicked()
     }
 
     /// Returns true if this widget was double-clicked this frame by the given button.
     pub fn double_clicked_by(resp: &mut Response, button: PointerButton) -> bool {
-       resp.double_clicked_by(button)
+        resp.double_clicked_by(button)
     }
 
     /// `true` if there was a click *outside* this widget this frame.
@@ -301,7 +288,7 @@ mod egui_response_api {
     /// and the widget should be drawn in a gray disabled look.
     #[inline(always)]
     pub fn enabled(resp: &mut Response) -> bool {
-       resp.enabled()
+        resp.enabled()
     }
 
     /// The pointer is hovering above this widget or the widget was clicked/tapped this frame.
@@ -312,17 +299,17 @@ mod egui_response_api {
     /// is covering this response rectangle.
     #[inline(always)]
     pub fn hovered(resp: &mut Response) -> bool {
-       resp.hovered()
+        resp.hovered()
     }
 
     /// This widget has the keyboard focus (i.e. is receiving key presses).
     pub fn has_focus(resp: &mut Response) -> bool {
-       resp.has_focus()
+        resp.has_focus()
     }
 
     /// True if this widget has keyboard focus this frame, but didn't last frame.
     pub fn gained_focus(resp: &mut Response) -> bool {
-       resp.gained_focus()
+        resp.gained_focus()
     }
 
     /// The widget had keyboard focus and lost it,
@@ -340,17 +327,17 @@ mod egui_response_api {
     /// # });
     /// ```
     pub fn lost_focus(resp: &mut Response) -> bool {
-       resp.lost_focus()
+        resp.lost_focus()
     }
 
     /// Request that this widget get keyboard focus.
     pub fn request_focus(resp: &mut Response) {
-       resp.request_focus();
+        resp.request_focus();
     }
 
     /// Surrender keyboard focus for this widget.
     pub fn surrender_focus(resp: &mut Response) {
-       resp.surrender_focus();
+        resp.surrender_focus();
     }
 
     /// The widgets is being dragged.
@@ -364,21 +351,21 @@ mod egui_response_api {
     /// You can use [`resp::interact`] to sense more things *after* adding a widget.
     #[inline(always)]
     pub fn dragged(resp: &mut Response) -> bool {
-       resp.dragged()
+        resp.dragged()
     }
 
     pub fn dragged_by(resp: &mut Response, button: PointerButton) -> bool {
-       resp.dragged_by(button)
+        resp.dragged_by(button)
     }
 
     /// Did a drag on this widgets begin this frame?
     pub fn drag_started(resp: &mut Response) -> bool {
-       resp.drag_started()
+        resp.drag_started()
     }
 
     /// The widget was being dragged, but now it has been released.
     pub fn drag_released(resp: &mut Response) -> bool {
-       resp.drag_released()
+        resp.drag_released()
     }
 
     /// If dragged, how many points were we dragged and in what direction?
@@ -389,7 +376,7 @@ mod egui_response_api {
     /// Where the pointer (mouse/touch) were when when this widget was clicked or dragged.
     /// `None` if the widget is not being interacted with.
     pub fn interact_pointer_pos(resp: &mut Response) -> Option<Pos2> {
-       resp.interact_pointer_pos()
+        resp.interact_pointer_pos()
     }
 
     /// If it is a good idea to show a tooltip, where is pointer?
@@ -402,7 +389,7 @@ mod egui_response_api {
     /// This is true if the pointer is pressing down or dragging a widget
     #[inline(always)]
     pub fn is_pointer_button_down_on(resp: &mut Response) -> bool {
-       resp.is_pointer_button_down_on()
+        resp.is_pointer_button_down_on()
     }
 
     /// What the underlying data changed?
@@ -417,7 +404,7 @@ mod egui_response_api {
     /// For instance, moving the cursor in a `TextEdit` does not set this to `true`.
     #[inline(always)]
     pub fn changed(resp: &mut Response) -> bool {
-       resp.changed()
+        resp.changed()
     }
 
     /// Report the data shown by this widget changed.
@@ -429,7 +416,7 @@ mod egui_response_api {
     /// So we call this when the text of a [`crate::TextEdit`], but not when the cursors changes.
     #[inline(always)]
     pub fn mark_changed(resp: &mut Response) {
-       resp.mark_changed()
+        resp.mark_changed()
     }
 
     /// Show this UI if the widget was hovered (i.e. a tooltip).
@@ -476,11 +463,10 @@ mod egui_response_api {
     //    resp
     // }
 
-
     /// Like `on_hover_text`, but show the text next to cursor.
     #[doc(alias = "tooltip")]
     pub fn on_hover_text_at_pointer(resp: &mut Response, text: &str) -> Response {
-       resp.clone().on_hover_text_at_pointer(text)
+        resp.clone().on_hover_text_at_pointer(text)
     }
 
     // /// Show this text if the widget was hovered (i.e. a tooltip).
@@ -522,7 +508,7 @@ mod egui_response_api {
     /// # });
     /// ```
     pub fn interact(resp: &mut Response, sense: Sense) -> Response {
-       resp.interact(sense)
+        resp.interact(sense)
     }
 
     /// Adjust the scroll position until this UI becomes visible.
@@ -544,7 +530,7 @@ mod egui_response_api {
     /// # });
     /// ```
     pub fn scroll_to_me(resp: &mut Response, align: Option<Align>) {
-       resp.scroll_to_me(align)
+        resp.scroll_to_me(align)
     }
 
     // /// For accessibility.
@@ -582,10 +568,12 @@ mod egui_response_api {
     /// ```
     ///
     /// See also: [`Ui::menu_button`] and [`Ui::close_menu`].
+    #[allow(clippy::let_unit_value)]
     pub fn context_menu(rtx: NativeCallContext, resp: &mut Response, cb: FnPtr) -> Response {
         resp.clone().context_menu(|ui| {
-            
-            let _: () = cb.call_within_context(&rtx, (MyUi::from(ui),)).expect("failed to execute callback code on ui");
+            let _: () = cb
+                .call_within_context(&rtx, (MyUi::from(ui),))
+                .expect("failed to execute callback code on ui");
         })
     }
 }
