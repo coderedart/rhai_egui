@@ -1,9 +1,6 @@
 name: Github Pages
 
-on:
-  push:
-    tags:
-      - "*"
+on: [push]
 
 permissions:
   contents: write
