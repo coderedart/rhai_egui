@@ -1,6 +1,6 @@
-### Very much a work in progress
+# Archived in favor of https://github.com/coderedart/luaegui
 
-don't use this yet. this is just a proof of concept that you can use rhai_egui on both native and web to script egui.
+
 
 we provide a basic live version at coderedart.github.io/rhai_egui
 
